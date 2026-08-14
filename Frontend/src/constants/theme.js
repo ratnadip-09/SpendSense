@@ -1,0 +1,17 @@
+export const T = {
+  pageBg: "var(--bg-page)",
+  sidebarBg: "var(--bg-sidebar)",
+  sidebarBorder: "var(--border-subtle)",
+  cardBg: "var(--bg-card)",
+  cardBorder: "var(--border-subtle)",
+  textPrimary: "var(--text-primary)",
+  textSecondary: "var(--text-secondary)",
+  textMuted: "var(--text-muted)",
+  activeNavBg: "var(--active-nav-bg)",
+  activeNavColor: "var(--color-primary)",
+  divider: "var(--divider)",
+  inputBg: "var(--input-bg)",
+  inputBorder: "var(--input-border)",
+  ringTrack: "var(--ring-track)",
+  ringInnerFill: "var(--ring-inner-fill)",
+};
