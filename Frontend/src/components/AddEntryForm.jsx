@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { predictCategory } from "../api";
 import { CATEGORIES } from "../constants/categories";
 import { T } from "../constants/theme";
 
@@ -11,6 +12,27 @@ export default function AddEntryForm({ onAdd }) {
     date: new Date().toISOString().split("T")[0],
   });
   const [saved, setSaved] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPrediction, setAiPrediction] = useState(null);
+
+  async function handleAICategorization() {
+    if (!form.title.trim()) return;
+
+    try {
+      setAiLoading(true);
+      const result = await predictCategory(form.title);
+      const prediction = result.prediction;
+      setAiPrediction(prediction);
+      setForm((previous) => ({
+        ...previous,
+        category: prediction.category,
+      }));
+    } catch (error) {
+      console.error("AI categorization failed:", error);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   function handleSubmit() {
     if (!form.title || !form.amount) return;
@@ -56,8 +78,40 @@ export default function AddEntryForm({ onAdd }) {
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
+          <button
+            type="button"
+            onClick={handleAICategorization}
+            disabled={aiLoading || !form.title.trim()}
+            style={{
+              marginTop: 8,
+              padding: "8px 14px",
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "#fff",
+              cursor:
+                aiLoading || !form.title.trim() ? "not-allowed" : "pointer",
+              opacity: aiLoading || !form.title.trim() ? 0.6 : 1,
+            }}
+          >
+            {aiLoading ? "Analyzing..." : "✨ Categorize with AI"}
+          </button>
+          {aiPrediction && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: 10,
+                borderRadius: 8,
+                background: "#f7f7ff",
+                fontSize: 13,
+              }}
+            >
+              <strong>AI Prediction:</strong> {aiPrediction.category}
+              <br />
+              Confidence: {aiPrediction.confidence}%
+            </div>
+          )}
         </div>
-        
+
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 140 }}>
             <label className="label-premium">Amount (₹)</label>
@@ -79,7 +133,7 @@ export default function AddEntryForm({ onAdd }) {
             />
           </div>
         </div>
-        
+
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 140 }}>
             <label className="label-premium">Type</label>
@@ -114,14 +168,12 @@ export default function AddEntryForm({ onAdd }) {
             </select>
           </div>
         </div>
-        
+
         <button
           onClick={handleSubmit}
           className="btn-premium-primary"
           style={{
-            background: saved
-              ? "var(--grad-success)"
-              : "var(--grad-primary)",
+            background: saved ? "var(--grad-success)" : "var(--grad-primary)",
             marginTop: 8,
             height: 44,
           }}

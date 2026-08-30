@@ -21,9 +21,29 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      // Not required for accounts created via Google Sign-In
+      required: [
+        function () {
+          return !this.googleId;
+        },
+        "Password is required",
+      ],
       minlength: [6, "Password must be at least 6 characters"],
       select: false, // never returned in queries by default
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // allows many docs with no googleId
+      select: false,
+    },
+    avatar: {
+      type: String,
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     monthlyBudget: {
       type: Number,

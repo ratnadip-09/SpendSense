@@ -1,7 +1,10 @@
 // controllers/authController.js — Register, Login, Get profile
 
 const jwt  = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /* ── Helper: sign JWT ── */
 const signToken = (id) =>
@@ -19,6 +22,8 @@ const sendToken = (user, statusCode, res) => {
       id:            user._id,
       name:          user.name,
       email:         user.email,
+      avatar:        user.avatar,
+      authProvider:  user.authProvider,
       monthlyBudget: user.monthlyBudget,
       categoryBudgets: user.categoryBudgets,
     },
@@ -69,6 +74,72 @@ exports.login = async (req, res, next) => {
 };
 
 /* ────────────────────────────────────────────
+   POST /api/auth/google
+   Body: { credential }  — Google Identity Services ID token
+──────────────────────────────────────────── */
+exports.googleAuth = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ success: false, message: "Missing Google credential" });
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.includes("your_google_oauth")) {
+      return res.status(500).json({
+        success: false,
+        message: "Google Sign-In is not configured on the server. Set a real GOOGLE_CLIENT_ID in Backend/.env.",
+      });
+    }
+
+    // Verify the ID token's signature, audience and expiry with Google
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (err) {
+      return res.status(401).json({ success: false, message: "Invalid or expired Google credential" });
+    }
+
+    if (!payload.email_verified) {
+      return res.status(401).json({ success: false, message: "Google email is not verified" });
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Match an existing Google-linked account first, then fall back to
+    // linking an existing email/password account with the same email.
+    let user = await User.findOne({ googleId }).select("+password");
+    if (!user) {
+      user = await User.findOne({ email });
+      if (user) {
+        user.googleId = googleId;
+        user.authProvider = "google";
+        if (!user.avatar) user.avatar = picture;
+        await user.save({ validateBeforeSave: false });
+      }
+    }
+
+    if (!user) {
+      user = await User.create({
+        name: name || email.split("@")[0],
+        email,
+        googleId,
+        avatar: picture,
+        authProvider: "google",
+      });
+    }
+
+    sendToken(user, 200, res);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ────────────────────────────────────────────
    GET /api/auth/me  (protected)
 ──────────────────────────────────────────── */
 exports.getMe = async (req, res) => {
@@ -78,6 +149,8 @@ exports.getMe = async (req, res) => {
       id:            req.user._id,
       name:          req.user.name,
       email:         req.user.email,
+      avatar:        req.user.avatar,
+      authProvider:  req.user.authProvider,
       monthlyBudget: req.user.monthlyBudget,
       categoryBudgets: req.user.categoryBudgets,
     },

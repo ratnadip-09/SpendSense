@@ -36,6 +36,18 @@ export async function login(email, password) {
   return data;
 }
 
+// Google Identity Services returns a signed ID token ("credential").
+// We hand it to the backend, which verifies it with Google and issues
+// our own session token — the same pattern real apps use.
+export async function googleAuth(credential) {
+  const data = await request("/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ credential }),
+  });
+  localStorage.setItem("token", data.token);
+  return data;
+}
+
 export function logout() {
   localStorage.removeItem("token");
 }
@@ -85,4 +97,13 @@ export async function getSummary(month, year) {
 // Get all months that have at least one transaction — for the month picker
 export async function getAvailableMonths() {
   return request("/transactions/months");
+}
+
+
+//ML services
+export async function predictCategory(description) {
+  return request("/ml/predict-category", {
+    method: "POST",
+    body: JSON.stringify({ description }),
+  });
 }

@@ -1,6 +1,6 @@
 import TransactionRow from "../components/TransactionRow";
 
-export default function Transections({
+export default function Transactions({
   transactions,
   deleteTransaction,
   headingColor,

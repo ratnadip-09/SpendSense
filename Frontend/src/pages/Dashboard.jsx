@@ -21,10 +21,12 @@ export default function Dashboard({
   billingCycle,
   monthPicker,
 }) {
-  const currentMonthName = billingCycle || new Date().toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
+  const currentMonthName =
+    billingCycle ||
+    new Date().toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
 
   return (
     <div>
@@ -74,7 +76,9 @@ export default function Dashboard({
             <StatCard
               label="Net Balance"
               value={balance}
-              accent={balance >= 0 ? "var(--color-success)" : "var(--color-danger)"}
+              accent={
+                balance >= 0 ? "var(--color-success)" : "var(--color-danger)"
+              }
               icon="💰"
               sub="Available Cash flow"
             />
@@ -133,7 +137,7 @@ export default function Dashboard({
                   .slice(0, 5)
                   .map((t) => (
                     <TransactionRow
-                      key={t.id}
+                      key={t._id}
                       t={t}
                       onDelete={deleteTransaction}
                     />
@@ -168,15 +172,25 @@ export default function Dashboard({
             >
               Budget Allocation
             </div>
-            <PulseRing spent={totalExpense} budget={BUDGET} onUpdate={onUpdateBudget} />
+            <PulseRing
+              spent={totalExpense}
+              budget={BUDGET}
+              onUpdate={onUpdateBudget}
+            />
             <div style={{ textAlign: "center", marginTop: 18 }}>
               <div style={{ fontSize: 13, color: T.textSecondary }}>
-                Limit: <span style={{ fontWeight: 600, color: T.textPrimary }}>₹{BUDGET.toLocaleString("en-IN")}</span>
+                Limit:{" "}
+                <span style={{ fontWeight: 600, color: T.textPrimary }}>
+                  ₹{BUDGET.toLocaleString("en-IN")}
+                </span>
               </div>
               <div
                 style={{
                   fontSize: 13,
-                  color: BUDGET - totalExpense >= 0 ? "var(--color-success)" : "var(--color-danger)",
+                  color:
+                    BUDGET - totalExpense >= 0
+                      ? "var(--color-success)"
+                      : "var(--color-danger)",
                   marginTop: 6,
                   fontWeight: 600,
                 }}

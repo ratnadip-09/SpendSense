@@ -1,14 +1,15 @@
 // App.jsx — SpendSense with monthly separation
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./index.css";
 import { T } from "./constants/theme";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import AddEntry from "./pages/AddEntry";
-import Transections from "./pages/Transections";
+import Transactions from "./pages/Transactions";
 import {
   login as apiLogin,
   register as apiRegister,
+  googleAuth as apiGoogleAuth,
   logout as apiLogout,
   getTransactions,
   createTransaction,
@@ -18,6 +19,8 @@ import {
   updateBudget,
   getMe,
 } from "./api";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 
 const MONTH_NAMES = [
@@ -47,31 +50,76 @@ function AuthForm({ onAuth }) {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isGoogleHovered, setIsGoogleHovered] = useState(false);
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleBtnRef = useRef(null);
 
-  async function handleGoogleLogin(email, name) {
-    setLoading(true);
+  // Handle the signed ID token Google hands back after the user picks an
+  // account, and exchange it for our own session via the backend.
+  const handleGoogleCredential = useCallback(async (response) => {
     setError("");
-    setShowGoogleModal(false);
+    setLoading(true);
     try {
-      let data;
-      try {
-        data = await apiLogin(email, "googleauth_mock_password_12345");
-      } catch (err) {
-        data = await apiRegister(
-          name,
-          email,
-          "googleauth_mock_password_12345",
-          25000
-        );
-      }
+      const data = await apiGoogleAuth(response.credential);
       onAuth(data.user);
     } catch (err) {
       setError(err.message || "Google authentication failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  }, [onAuth]);
+
+  // Load Google Identity Services and render the official Google button.
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("your_google_oauth")) {
+      return; // not configured — button area will show a helpful message instead
+    }
+
+    let cancelled = false;
+
+    function init() {
+      if (cancelled || !window.google?.accounts?.id) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      setGoogleReady(true);
+    }
+
+    if (window.google?.accounts?.id) {
+      init();
+    } else {
+      // The GSI script loads async; poll briefly until it's ready.
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval);
+          init();
+        }
+      }, 100);
+      setTimeout(() => clearInterval(interval), 10000);
+      return () => clearInterval(interval);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleGoogleCredential]);
+
+  // Render (and re-render on mode change, so the label matches "Sign in" / "Sign up")
+  useEffect(() => {
+    if (!googleReady || !googleBtnRef.current || !window.google?.accounts?.id) return;
+    googleBtnRef.current.innerHTML = "";
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      shape: "pill",
+      text: mode === "login" ? "signin_with" : "signup_with",
+      logo_alignment: "left",
+      width: 336,
+    });
+  }, [googleReady, mode]);
 
   function patch(k, v) {
     setForm((p) => ({ ...p, [k]: v }));
@@ -295,37 +343,36 @@ function AuthForm({ onAuth }) {
             <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }}></div>
           </div>
 
-          <button
-            onMouseEnter={() => setIsGoogleHovered(true)}
-            onMouseLeave={() => setIsGoogleHovered(false)}
-            onClick={() => {
-              setShowGoogleModal(true);
-            }}
-            style={{
-              background: isGoogleHovered ? "rgba(99, 102, 241, 0.04)" : "#fff",
-              color: "#1a73e8",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 10,
-              padding: "11px",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              transition: "background 0.2s, border-color 0.2s",
-              width: "100%",
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.5 24c0-1.55-.15-3.24-.47-4.77H24v9.03h12.75c-.53 2.87-2.14 5.3-4.57 6.94l7.1 5.51C43.43 36.3 46.5 30.82 46.5 24z"/>
-              <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.1-5.51c-1.97 1.34-4.55 2.18-8.79 2.18-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            </svg>
-            <span>{mode === "login" ? "Sign in with Google" : "Sign up with Google"}</span>
-          </button>
+          {GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes("your_google_oauth") ? (
+            <div
+              ref={googleBtnRef}
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                minHeight: 40,
+                opacity: loading ? 0.6 : 1,
+                pointerEvents: loading ? "none" : "auto",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                background: "#F9FAFB",
+                border: "1px dashed #D1D5DB",
+                borderRadius: 10,
+                color: "#6B7280",
+                fontSize: 12.5,
+                lineHeight: 1.5,
+                padding: "12px 14px",
+                textAlign: "center",
+              }}
+            >
+              Google Sign-In isn&apos;t configured yet. Add a real{" "}
+              <code>VITE_GOOGLE_CLIENT_ID</code> (and matching{" "}
+              <code>GOOGLE_CLIENT_ID</code> on the backend) to enable the
+              official Google button here.
+            </div>
+          )}
 
           <div
             style={{
@@ -349,103 +396,6 @@ function AuthForm({ onAuth }) {
             </span>
           </div>
         </div>
-        {showGoogleModal && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "#fff",
-              borderRadius: 20,
-              padding: "36px 32px",
-              zIndex: 10,
-              display: "flex",
-              flexDirection: "column",
-              boxSizing: "border-box",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32px" height="32px" style={{ marginBottom: 12 }}>
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.5 24c0-1.55-.15-3.24-.47-4.77H24v9.03h12.75c-.53 2.87-2.14 5.3-4.57 6.94l7.1 5.51C43.43 36.3 46.5 30.82 46.5 24z"/>
-                <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.1-5.51c-1.97 1.34-4.55 2.18-8.79 2.18-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              </svg>
-              <div style={{ fontSize: 20, fontWeight: 500, color: "#202124", textAlign: "center" }}>
-                Choose an account
-              </div>
-              <div style={{ fontSize: 13, color: "#5f6368", marginTop: 4, textAlign: "center" }}>
-                to continue to <span style={{ fontWeight: 500, color: "#1a73e8" }}>SpendSense</span>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", border: "1px solid #dadce0", borderRadius: 8, overflow: "hidden", marginBottom: 20 }}>
-              {[
-                { name: "Ratnesh Singh", email: "ratnesh.singh@gmail.com", avatar: "R", color: "#1a73e8" },
-                { name: "Demo User", email: "demo.user@gmail.com", avatar: "D", color: "#0f9d58" }
-              ].map((acc, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleGoogleLogin(acc.email, acc.name)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "12px 16px",
-                    cursor: "pointer",
-                    borderBottom: index === 0 ? "1px solid #dadce0" : "none",
-                    background: "#fff",
-                    transition: "background 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#fff"}
-                >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: acc.color,
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      marginRight: 12,
-                    }}
-                  >
-                    {acc.avatar}
-                  </div>
-                  <div style={{ flex: 1, textAlign: "left" }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 500, color: "#3c4043" }}>{acc.name}</div>
-                    <div style={{ fontSize: 12, color: "#5f6368" }}>{acc.email}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowGoogleModal(false)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#1a73e8",
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "pointer",
-                padding: "8px",
-                alignSelf: "flex-end",
-                transition: "opacity 0.2s",
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = 0.8}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = 1}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -714,7 +664,7 @@ export default function App() {
         )}
 
         {!loading && active === "transactions" && (
-          <Transections
+          <Transactions
             transactions={transactions}
             deleteTransaction={handleDelete}
             headingColor={T.textPrimary}

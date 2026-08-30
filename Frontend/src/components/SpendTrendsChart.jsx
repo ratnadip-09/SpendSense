@@ -87,7 +87,7 @@ const CustomTooltip = ({ active, payload }) => {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {data.transactions.slice(0, 3).map((t, idx) => (
-                <div key={t.id || idx} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textSecondary }}>
+                <div key={t._id || idx} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textSecondary }}>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
                     {t.title}
                   </span>
