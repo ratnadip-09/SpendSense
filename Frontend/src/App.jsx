@@ -22,6 +22,34 @@ import {
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+const SunIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>
+);
 
 const MONTH_NAMES = [
   "",
@@ -40,7 +68,7 @@ const MONTH_NAMES = [
 ];
 
 /* ── AuthForm ── */
-function AuthForm({ onAuth }) {
+function AuthForm({ onAuth, theme = "dark", toggleTheme }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
     name: "",
@@ -106,20 +134,40 @@ function AuthForm({ onAuth }) {
     };
   }, [handleGoogleCredential]);
 
-  // Render (and re-render on mode change, so the label matches "Sign in" / "Sign up")
+  // Render (and re-render on mode, theme, or resize)
   useEffect(() => {
     if (!googleReady || !googleBtnRef.current || !window.google?.accounts?.id) return;
-    googleBtnRef.current.innerHTML = "";
-    window.google.accounts.id.renderButton(googleBtnRef.current, {
-      type: "standard",
-      theme: "outline",
-      size: "large",
-      shape: "pill",
-      text: mode === "login" ? "signin_with" : "signup_with",
-      logo_alignment: "left",
-      width: 336,
+
+    const renderBtn = () => {
+      if (!googleBtnRef.current || !window.google?.accounts?.id) return;
+      const containerWidth = Math.floor(googleBtnRef.current.getBoundingClientRect().width) || 336;
+      const targetWidth = Math.min(Math.max(containerWidth, 200), 400);
+
+      googleBtnRef.current.innerHTML = "";
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        shape: "rectangular",
+        text: mode === "login" ? "signin_with" : "signup_with",
+        logo_alignment: "center",
+        width: targetWidth,
+      });
+    };
+
+    renderBtn();
+
+    const observer = new ResizeObserver(() => {
+      renderBtn();
     });
-  }, [googleReady, mode]);
+    if (googleBtnRef.current) {
+      observer.observe(googleBtnRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [googleReady, mode, theme]);
 
   function patch(k, v) {
     setForm((p) => ({ ...p, [k]: v }));
@@ -148,41 +196,96 @@ function AuthForm({ onAuth }) {
     border: "1px solid var(--input-border)",
     borderRadius: 10,
     color: "var(--text-primary)",
-    fontSize: 13.5,
-    padding: "10px 14px",
+    fontSize: 14,
+    fontWeight: 500,
+    padding: "11px 14px",
     width: "100%",
     outline: "none",
     fontFamily: "inherit",
     boxSizing: "border-box",
+    transition: "border-color 0.2s, box-shadow 0.2s, background-color 0.2s",
   };
   const lbl = {
     fontSize: 11,
-    color: "var(--text-muted)",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
+    fontWeight: 700,
     marginBottom: 6,
     display: "block",
   };
+
+  const handleFocus = (e) => {
+    e.target.style.borderColor = "var(--color-primary)";
+    e.target.style.boxShadow = "0 0 0 2px var(--border-focus)";
+  };
+  const handleBlur = (e) => {
+    e.target.style.borderColor = "var(--input-border)";
+    e.target.style.boxShadow = "none";
+  };
+
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "var(--page-bg)",
+        background: "var(--bg-page)",
+        color: "var(--text-primary)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        position: "relative",
+        padding: 20,
+        boxSizing: "border-box",
+        transition: "background-color 0.3s ease, color 0.3s ease",
       }}
     >
+      {/* Theme toggle switch in top-right */}
+      {toggleTheme && (
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: "absolute",
+            top: 24,
+            right: 24,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+            color: "var(--text-secondary)",
+            borderRadius: 10,
+            padding: "8px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "var(--shadow-sm)",
+            transition: "all 0.2s ease",
+            outline: "none",
+          }}
+          title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+        </button>
+      )}
+
+      {/* Auth Card: Matches the obsidian dashboard aesthetic */}
       <div
+        className="glass-card"
         style={{
-          background: "#fff",
-          border: "1px solid var(--card-border)",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-subtle)",
           borderRadius: 20,
           padding: "36px 32px",
           width: "100%",
           maxWidth: 400,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+          boxSizing: "border-box",
+          boxShadow: "var(--shadow-md)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           position: "relative",
+          transition: "background-color 0.3s ease, border-color 0.3s ease",
         }}
       >
         <div
@@ -191,7 +294,7 @@ function AuthForm({ onAuth }) {
             alignItems: "center",
             justifyContent: "center",
             gap: 10,
-            marginBottom: 28,
+            marginBottom: 26,
           }}
         >
           <div
@@ -205,6 +308,7 @@ function AuthForm({ onAuth }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
             }}
           >
             ₹
@@ -212,9 +316,10 @@ function AuthForm({ onAuth }) {
           <div>
             <div
               style={{
-                fontWeight: 700,
-                fontSize: 16,
+                fontWeight: 800,
+                fontSize: 17,
                 color: "var(--text-primary)",
+                letterSpacing: "-0.01em",
               }}
             >
               SpendSense
@@ -225,29 +330,33 @@ function AuthForm({ onAuth }) {
                 color: "var(--text-muted)",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
+                fontWeight: 600,
               }}
             >
               AI Tracker
             </div>
           </div>
         </div>
+
         <div
           style={{
-            fontSize: 18,
-            fontWeight: 700,
+            fontSize: 20,
+            fontWeight: 800,
             color: "var(--text-primary)",
             marginBottom: 6,
+            fontFamily: "var(--font-heading)",
           }}
         >
           {mode === "login" ? "Welcome back" : "Create account"}
         </div>
         <div
-          style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 24 }}
+          style={{ fontSize: 13.5, color: "var(--text-secondary)", marginBottom: 22 }}
         >
           {mode === "login"
             ? "Sign in to continue"
             : "Start tracking your expenses"}
         </div>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {mode === "register" && (
             <div>
@@ -257,6 +366,8 @@ function AuthForm({ onAuth }) {
                 placeholder="Rahul Sharma"
                 value={form.name}
                 onChange={(e) => patch("name", e.target.value)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
               />
             </div>
           )}
@@ -268,6 +379,8 @@ function AuthForm({ onAuth }) {
               placeholder="you@example.com"
               value={form.email}
               onChange={(e) => patch("email", e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
             />
           </div>
           <div>
@@ -278,6 +391,8 @@ function AuthForm({ onAuth }) {
               placeholder="••••••••"
               value={form.password}
               onChange={(e) => patch("password", e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
             />
           </div>
           {mode === "register" && (
@@ -289,18 +404,21 @@ function AuthForm({ onAuth }) {
                 placeholder="25000"
                 value={form.monthlyBudget}
                 onChange={(e) => patch("monthlyBudget", e.target.value)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
               />
             </div>
           )}
           {error && (
             <div
               style={{
-                background: "#FEF2F2",
-                border: "1px solid #FECACA",
+                background: "rgba(239, 68, 68, 0.15)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
                 borderRadius: 8,
                 padding: "10px 14px",
                 fontSize: 13,
-                color: "#DC2626",
+                color: "#f87171",
+                fontWeight: 500,
               }}
             >
               {error}
@@ -310,8 +428,10 @@ function AuthForm({ onAuth }) {
             onClick={handleSubmit}
             disabled={loading}
             style={{
+              width: "100%",
+              boxSizing: "border-box",
               background: "linear-gradient(135deg,#6366F1,#818CF8)",
-              color: "#fff",
+              color: "#ffffff",
               border: "none",
               borderRadius: 10,
               padding: "12px",
@@ -320,6 +440,7 @@ function AuthForm({ onAuth }) {
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.7 : 1,
               marginTop: 4,
+              boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
             }}
           >
             {loading
@@ -339,7 +460,7 @@ function AuthForm({ onAuth }) {
             }}
           >
             <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }}></div>
-            <span style={{ padding: "0 10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>or</span>
+            <span style={{ padding: "0 10px", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 500 }}>or</span>
             <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }}></div>
           </div>
 
@@ -349,7 +470,8 @@ function AuthForm({ onAuth }) {
               style={{
                 display: "flex",
                 justifyContent: "center",
-                minHeight: 40,
+                width: "100%",
+                minHeight: 44,
                 opacity: loading ? 0.6 : 1,
                 pointerEvents: loading ? "none" : "auto",
               }}
@@ -357,10 +479,10 @@ function AuthForm({ onAuth }) {
           ) : (
             <div
               style={{
-                background: "#F9FAFB",
-                border: "1px dashed #D1D5DB",
+                background: "var(--input-bg)",
+                border: "1px dashed var(--border-subtle)",
                 borderRadius: 10,
-                color: "#6B7280",
+                color: "var(--text-secondary)",
                 fontSize: 12.5,
                 lineHeight: 1.5,
                 padding: "12px 14px",
@@ -378,7 +500,7 @@ function AuthForm({ onAuth }) {
             style={{
               textAlign: "center",
               fontSize: 13,
-              color: "var(--text-muted)",
+              color: "var(--text-secondary)",
               marginTop: 4,
             }}
           >
@@ -390,7 +512,7 @@ function AuthForm({ onAuth }) {
                 setMode(mode === "login" ? "register" : "login");
                 setError("");
               }}
-              style={{ color: "#6366F1", fontWeight: 600, cursor: "pointer" }}
+              style={{ color: "var(--color-primary)", fontWeight: 700, cursor: "pointer" }}
             >
               {mode === "login" ? "Register" : "Sign In"}
             </span>
@@ -404,7 +526,7 @@ function AuthForm({ onAuth }) {
 /* ── MonthPicker ── */
 function MonthPicker({ month, year, availableMonths, onChange }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
       <select
         value={`${year}-${month}`}
         onChange={(e) => {
@@ -412,29 +534,47 @@ function MonthPicker({ month, year, availableMonths, onChange }) {
           onChange(parseInt(m), parseInt(y));
         }}
         style={{
-          background: "#fff",
-          border: "1px solid var(--card-border)",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-subtle)",
           borderRadius: 8,
-          padding: "6px 12px",
+          padding: "7px 32px 7px 12px",
           fontSize: 13,
+          fontWeight: 600,
           color: "var(--text-primary)",
           cursor: "pointer",
           outline: "none",
           fontFamily: "inherit",
+          appearance: "none",
+          boxShadow: "var(--shadow-sm)",
+          transition: "all 0.2s ease",
         }}
       >
         {availableMonths.length === 0 ? (
-          <option value={`${year}-${month}`}>
+          <option value={`${year}-${month}`} style={{ background: "var(--bg-sidebar)", color: "var(--text-primary)" }}>
             {MONTH_NAMES[month]} {year}
           </option>
         ) : (
           availableMonths.map((m) => (
-            <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+            <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`} style={{ background: "var(--bg-sidebar)", color: "var(--text-primary)" }}>
               {MONTH_NAMES[m.month]} {m.year}
             </option>
           ))
         )}
       </select>
+      <span
+        style={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          pointerEvents: "none",
+          color: "var(--text-secondary)",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <CalendarIcon />
+      </span>
     </div>
   );
 }
@@ -454,7 +594,7 @@ export default function App() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [availableMonths, setAvailableMonths] = useState([]);
 
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -589,7 +729,7 @@ export default function App() {
     setSummary(null);
   }
 
-  if (!user) return <AuthForm onAuth={(u) => setUser(u)} />;
+  if (!user) return <AuthForm onAuth={(u) => setUser(u)} theme={theme} toggleTheme={toggleTheme} />;
 
   const salary = user.monthlyBudget || 0;
   const spent = summary?.totalExpense || 0;

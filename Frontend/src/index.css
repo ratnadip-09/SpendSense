@@ -45,6 +45,11 @@
   
   --bg-page-grad: radial-gradient(circle at top left, #f1f5f9 0%, #e2e8f0 70%);
 
+  /* Fallback aliases */
+  --page-bg: var(--bg-page);
+  --card-border: var(--border-subtle);
+  --card-bg: var(--bg-card);
+
   background-color: var(--bg-page);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -80,13 +85,20 @@ html[data-theme="dark"] {
   --shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.10);
   
   --bg-page-grad: radial-gradient(circle at top left, #0b0f19 0%, #020617 70%);
+
+  /* Fallback aliases */
+  --page-bg: var(--bg-page);
+  --card-border: var(--border-subtle);
+  --card-bg: var(--bg-card);
 }
 
 body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-page);
+  color: var(--text-primary);
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Custom Scrollbars */
@@ -141,9 +153,9 @@ body {
 
 .input-premium:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.05);
-  background: #ffffff;
-  color: #0f172a;
+  box-shadow: 0 0 0 2px var(--border-focus), inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .input-premium option {
@@ -249,10 +261,13 @@ body {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
   margin: 0;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
 }
 
 .heading-sub {

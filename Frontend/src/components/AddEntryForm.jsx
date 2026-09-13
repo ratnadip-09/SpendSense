@@ -85,12 +85,16 @@ export default function AddEntryForm({ onAdd }) {
             style={{
               marginTop: 8,
               padding: "8px 14px",
-              border: "1px solid #ddd",
+              border: "1px solid var(--border-subtle)",
               borderRadius: 8,
-              background: "#fff",
+              background: "var(--input-bg)",
+              color: "var(--text-primary)",
+              fontSize: 13,
+              fontWeight: 600,
               cursor:
                 aiLoading || !form.title.trim() ? "not-allowed" : "pointer",
               opacity: aiLoading || !form.title.trim() ? 0.6 : 1,
+              transition: "all 0.2s ease",
             }}
           >
             {aiLoading ? "Analyzing..." : "✨ Categorize with AI"}
@@ -99,15 +103,17 @@ export default function AddEntryForm({ onAdd }) {
             <div
               style={{
                 marginTop: 10,
-                padding: 10,
+                padding: "10px 14px",
                 borderRadius: 8,
-                background: "#f7f7ff",
+                background: "rgba(99, 102, 241, 0.08)",
+                border: "1px solid rgba(99, 102, 241, 0.2)",
+                color: "var(--text-primary)",
                 fontSize: 13,
               }}
             >
-              <strong>AI Prediction:</strong> {aiPrediction.category}
+              <strong style={{ color: "var(--color-primary)" }}>AI Prediction:</strong> {aiPrediction.category}
               <br />
-              Confidence: {aiPrediction.confidence}%
+              <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Confidence: {aiPrediction.confidence}%</span>
             </div>
           )}
         </div>

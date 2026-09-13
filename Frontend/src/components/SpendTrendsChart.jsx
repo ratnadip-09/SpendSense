@@ -57,8 +57,9 @@ const CustomTooltip = ({ active, payload }) => {
         style={{
           padding: "14px 18px",
           minWidth: 220,
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         <div style={{ fontWeight: 800, color: T.textPrimary, marginBottom: 8, fontSize: 13 }}>
@@ -81,7 +82,7 @@ const CustomTooltip = ({ active, payload }) => {
         </div>
         
         {data.transactions && data.transactions.length > 0 && (
-          <div style={{ marginTop: 10, borderTop: "1px solid rgba(0, 0, 0, 0.05)", paddingTop: 8 }}>
+          <div style={{ marginTop: 10, borderTop: "1px solid var(--border-subtle)", paddingTop: 8 }}>
             <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: T.textMuted, marginBottom: 6, letterSpacing: "0.05em" }}>
               Recent Entries ({data.transactions.length})
             </div>
@@ -276,25 +277,25 @@ export default function SpendTrendsChart({ transactions = [] }) {
           <div
             style={{
               display: "flex",
-              background: "rgba(15, 23, 42, 0.04)",
+              background: "var(--input-bg)",
               padding: 3,
               borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.03)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             <button
               onClick={() => setViewType("daily")}
               style={{
-                padding: "5px 10px",
+                padding: "5px 12px",
                 fontSize: 11.5,
                 fontWeight: 600,
                 border: "none",
                 borderRadius: 6,
-                background: viewType === "daily" ? "#fff" : "transparent",
-                color: viewType === "daily" ? T.textPrimary : T.textSecondary,
+                background: viewType === "daily" ? "var(--bg-card-hover)" : "transparent",
+                color: viewType === "daily" ? "var(--text-primary)" : "var(--text-secondary)",
                 cursor: "pointer",
-                boxShadow: viewType === "daily" ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
-                transition: "all 0.2s",
+                boxShadow: viewType === "daily" ? "var(--shadow-sm)" : "none",
+                transition: "all 0.2s ease",
               }}
             >
               Daily
@@ -302,16 +303,16 @@ export default function SpendTrendsChart({ transactions = [] }) {
             <button
               onClick={() => setViewType("weekly")}
               style={{
-                padding: "5px 10px",
+                padding: "5px 12px",
                 fontSize: 11.5,
                 fontWeight: 600,
                 border: "none",
                 borderRadius: 6,
-                background: viewType === "weekly" ? "#fff" : "transparent",
-                color: viewType === "weekly" ? T.textPrimary : T.textSecondary,
+                background: viewType === "weekly" ? "var(--bg-card-hover)" : "transparent",
+                color: viewType === "weekly" ? "var(--text-primary)" : "var(--text-secondary)",
                 cursor: "pointer",
-                boxShadow: viewType === "weekly" ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
-                transition: "all 0.2s",
+                boxShadow: viewType === "weekly" ? "var(--shadow-sm)" : "none",
+                transition: "all 0.2s ease",
               }}
             >
               Weekly
@@ -327,14 +328,15 @@ export default function SpendTrendsChart({ transactions = [] }) {
                 padding: "6px 28px 6px 12px",
                 fontSize: 12.5,
                 fontWeight: 600,
-                color: T.textSecondary,
-                background: "#fff",
-                border: "1px solid rgba(0, 0, 0, 0.06)",
+                color: "var(--text-primary)",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
                 borderRadius: 8,
                 cursor: "pointer",
                 appearance: "none",
                 outline: "none",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                boxShadow: "var(--shadow-sm)",
+                fontFamily: "inherit",
               }}
             >
               {availableMonths.map((m) => {
@@ -344,7 +346,7 @@ export default function SpendTrendsChart({ transactions = [] }) {
                   year: "numeric",
                 });
                 return (
-                  <option key={m} value={m}>
+                  <option key={m} value={m} style={{ background: "var(--bg-sidebar)", color: "var(--text-primary)" }}>
                     {label}
                   </option>
                 );
@@ -357,7 +359,7 @@ export default function SpendTrendsChart({ transactions = [] }) {
                 top: "50%",
                 transform: "translateY(-50%)",
                 pointerEvents: "none",
-                color: T.textMuted,
+                color: "var(--text-secondary)",
                 display: "flex",
                 alignItems: "center",
               }}
@@ -457,7 +459,7 @@ export default function SpendTrendsChart({ transactions = [] }) {
                     <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.03)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--divider)" />
                 <XAxis
                   dataKey="label"
                   stroke={T.textMuted}
@@ -513,7 +515,7 @@ export default function SpendTrendsChart({ transactions = [] }) {
                     <stop offset="100%" stopColor="#dc2626" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.03)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--divider)" />
                 <XAxis
                   dataKey="label"
                   stroke={T.textMuted}
